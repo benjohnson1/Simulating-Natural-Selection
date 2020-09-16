@@ -1,0 +1,237 @@
+import random
+import collections
+
+class Area(object):
+    """docstring for board."""
+    def __init__(self, m, n, food):
+        if food > ((m-1)*(n-1)):
+            raise Exception("Too much food for this board!")
+        self.m = m
+        self.n = n
+        self.food = food
+        self.max_food = food
+        self.grid = [[0 for x in range(self.m)] for y in range(self.n)]
+        self.food_loc = self.randomize_food()
+
+    def randomize_food(self):
+        self.grid = [[0 for x in range(self.m)] for y in range(self.n)]
+        food_loc = []
+        for i in range(self.max_food):
+            already_populated = True
+            while already_populated:
+                row = random.randrange(1, (self.m) - 1)
+                col = random.randrange(1, (self.n) - 1)
+                if self.grid[row][col] != 1:
+                    self.grid[row][col] = 1
+                    food_loc.append([row,col])
+                    already_populated = False
+        self.food_loc = food_loc
+        return food_loc
+
+    def display_area(self):
+        for row in self.grid:
+            print(row)
+
+class Blob(object):
+    """docstring for Blob."""
+    def __init__(self, area, energy, speed):
+        side = random.choice(["top", "bottom", "left", "right"])
+        if side == "top": loc = [0, random.randrange(0, area.n)]
+        if side == "bottom": loc = [(area.m) - 1, random.randrange(0, area.n)]
+        if side == "left": loc = [random.randrange(0, area.m), 0]
+        if side == "right": loc = [random.randrange(0, area.m), (area.n) - 1]
+        self.loc = self.randomize_start(area)
+        self.prev_loc = loc
+        self.food = 0
+        self.energy = energy
+        self.max_energy = energy
+        self.speed = speed
+        self.size = 1
+
+    def get_info(self):
+        return [self.loc, self.food, self.energy, self.speed]
+
+    def display_info(self):
+        info = self.get_info()
+        print("Location: " + str(info[0]) + ", Food: " + str(info[1]) + ", Energy: " + str(info[2]) + ", Speed: " + str(info[3]))
+
+    def randomize_start(self, area):
+        side = random.choice(["top", "bottom", "left", "right"])
+        if side == "top": loc = [0, random.randrange(0, area.n)]
+        if side == "bottom": loc = [(area.m) - 1, random.randrange(0, area.n)]
+        if side == "left": loc = [random.randrange(0, area.m), 0]
+        if side == "right": loc = [random.randrange(0, area.m), (area.n) - 1]
+        self.loc = loc
+        return loc
+
+    def is_home(self, area):
+        curr_x, curr_y = self.loc[0], self.loc[1]
+        if curr_x == 0 or curr_x == (area.m - 1) or curr_y == 0 or curr_y == (area.n - 1):
+            return True
+        else:
+            return False
+
+    def nearest_edge(self, area):
+        curr_x, curr_y = self.loc[0], self.loc[1]
+        dist_top = curr_x
+        dist_bottom = (area.m - 1) - curr_x
+        dist_left = curr_y
+        dist_right = (area.n - 1) - curr_y
+        if dist_top == 0 or dist_bottom == 0 or dist_left == 0 or dist_right == 0:
+            return [curr_x, curr_y], [curr_x, curr_y]
+        min_dist = min(dist_top, dist_bottom, dist_left, dist_right)
+        if dist_top == min_dist: direction = [-1, 0]
+        if dist_bottom == min_dist: direction = [1, 0]
+        if dist_left == min_dist: direction = [0, -1]
+        if dist_right == min_dist: direction = [0, 1]
+        min_dist = max(0,min_dist)
+        return min_dist, direction
+
+    def eat(self, area):
+        curr_x, curr_y = self.loc[0], self.loc[1]
+        if area.grid[curr_x][curr_y] == 1:
+            self.food += 1
+            area.grid[curr_x][curr_y] = 0
+
+    def move(self, area, movement_type, remaining_creatures):
+        speed = round(self.speed, 1)
+        for i in range(STEPS[speed]):
+            self.eat(area)
+            self.energy -= (speed)**2
+            movement_type(area)
+            for neighbor in remaining_creatures:
+                neighbor_x, neighbor_y = neighbor.loc[0], neighbor.loc[1]
+                if 
+
+    def search(self, area):
+        curr_x, curr_y = self.loc[0], self.loc[1]
+        directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        valid_directions = []
+        for d in directions:
+            if curr_x + d[0] in range(area.m) and curr_y + d[1] in range(area.n):
+                #if (curr_x == 0 and curr_y == 0) or (curr_x == 0 and curr_y == area.n - 1) or (curr_x == area.m - 1 and curr_y == 0) or (curr_x == area.m- 1 and curr_y == area.n - 1):
+                    #valid_directions.append(d)
+                #if curr_x + d[0] != self.prev_loc[0] and curr_y + d[1] != self.prev_loc[1]:
+                valid_directions.append(d)
+        direction_choice = random.choice(valid_directions)
+        next_loc = [curr_x + direction_choice[0], curr_y + direction_choice[1]]
+        self.loc = next_loc
+        self.prev_loc = [curr_x, curr_y]
+        return [curr_x, curr_y], next_loc
+
+    def go_home(self, area):
+        curr_x, curr_y = self.loc[0], self.loc[1]
+        if self.is_home(area) == True:
+            next_loc = [curr_x, curr_y]
+        else:
+            min_dist, direction = self.nearest_edge(area)
+            next_loc = [curr_x + direction[0], curr_y + direction[1]]
+        self.loc = next_loc
+        self.prev_loc = [curr_x, curr_y]
+        return [curr_x, curr_y], next_loc
+
+    def set_food(self, amt):
+        self.food = amt
+
+    def add_food(self, amt):
+        self.food += amt
+
+    def remove_food(self, amt):
+        self.food -= amt
+
+    def reset_energy(self):
+        self.energy = self.max_energy
+
+def display_all_creatures(creature_lst):
+    for c in creature_lst:
+        c.display_info()
+    return 0
+
+def reproduce(area, creature):
+    speed_change = random.choice([-.2, 0, .2])
+    new_speed = creature.speed + speed_change
+    if new_speed < .2: new_speed = .2
+    if new_speed > 2.0: new_speed = 2.0
+    return Blob(area, creature.max_energy, new_speed)
+
+def start_day(area, creature_lst):
+    new_lst = []
+    energized_creatures = list(creature_lst)
+    while energized_creatures:
+        for creature in energized_creatures:
+            rounded_speed = round(creature.get_info()[3], 1)
+            if creature.is_home(area) == True and creature.get_info()[1] >= 1 and creature.get_info()[2] < STEPS[rounded_speed]:
+                new_lst.append(creature)
+                energized_creatures.remove(creature)
+            elif creature.get_info()[2] < 1:
+                energized_creatures.remove(creature)
+            else:
+                if creature.get_info()[1] == 0:
+                    creature.move(area, creature.search)
+                if creature.get_info()[1] >= 1:
+                    distance, direction = creature.nearest_edge(area)
+                    if creature.is_home(area) != True and distance >= (creature.get_info()[2]/STEPS[rounded_speed]):
+                        creature.move(area, creature.go_home, energized_creatures)
+                    else:
+                        creature.move(area, creature.search, energized_creatures)
+
+    for creature in new_lst:
+        if creature.get_info()[1] > 1:
+            new_lst.append(reproduce(area, creature))
+    for creature in new_lst:
+        creature.randomize_start(area)
+        creature.set_food(0)
+        creature.reset_energy()
+
+    print("Num Foods: %d" % (food_left(area)))
+    area = area.randomize_food()
+
+    return new_lst
+
+def food_left(area):
+    num = 0
+    for i in range(area.m):
+        for j in range(area.n):
+            if area.grid[i][j] == 1:
+                num += 1
+    return num
+
+def get_average(creatures):
+    speed_sum = 0
+    for creature in creatures:
+        rounded_speed = round(creature.get_info()[3], 1)
+        speed_sum += rounded_speed
+    speed_avg = speed_sum/len(creatures)
+    return speed_avg
+
+
+
+def run(days, area, creatures):
+    for i in range(days):
+        print("DAY %d" % (i))
+        print("Num Blobs: %d" % (len(creatures)))
+        print("Num Foods: %d" % (food_left(area)))
+        print("Average Speed: " + str(get_average(creatures)))
+        creatures = start_day(area, creatures)
+
+    return creatures
+
+STEPS = {.2: 1, .4: 2, .6: 3, .8: 4, 1.0: 5, 1.2: 6, 1.4: 7, 1.6: 8, 1.8: 9, 2.0: 10}
+
+area = Area(15,15,100)
+area.display_area()
+creatures = [Blob(area, 100, 1.0) for i in range(1)]
+#creatures.append(Blob(area, 100, 7.0))
+creatures = run(150, area, creatures)
+
+speed_dict = {}
+for creature in creatures:
+    rounded_speed = round(creature.get_info()[3], 1)
+    if rounded_speed not in speed_dict:
+        speed_dict[rounded_speed] = 1
+    else:
+        speed_dict[rounded_speed] += 1
+print(speed_dict)
+
+#with mutation on, num blobs = 47
+#with mutation off, num blobs = 55
